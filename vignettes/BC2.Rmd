@@ -1,0 +1,283 @@
+---
+title: "BC2 vignette"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{BC2}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+<style>
+body {
+text-align: justify}
+</style>
+
+BC2 is a package with basic tools for fitting and evaluating multivariate semi-continuous proportionally constrained two-part fixed effects models. This model is useful when we are facing continuous responses with generally more than 50% zero observations which is called semi-continuous data.
+
+BC2 views these responses as the result of a logistic process which determines whether the response is zero or not and a positive part which investigates the relations on non-zero values of the responses where coefficients in all parts are related through constraints.
+
+This model is constructed based on the following log-likelihood function:
+
+$$l(\theta)=-n_1 log(2\pi)-\frac{n_1}{2}log(\sigma_1^2)-\frac{n_1}{2}log(\sigma_2^2)-\frac{n_1}{2}log(1-\rho^2)-$$
+$$\sum_{d_all}{log[1+e^{a_0+x_i^T\beta}]}+n_1a_0+\sum_{d+}{x_i^T\beta}-$$
+
+$$\frac{1}{2\sigma_1^2(1-\rho^2)}\sum_{d+}{(y_{i1}-a_1-b_1x_i^T\beta)^2}-$$
+
+$$\frac{1}{2\sigma_2^2(1-\rho^2)}\sum_{d+}{(y_{i2}-a_2-b_2x_i^T\beta)^2}+$$
+
+$$\frac{\rho}{\sigma_1\sigma_2(1-\rho^2)}\sum_{d+}{(y_{i1}-a_1-b_1x_i^T\beta)(y_{i2}-a_2-b_2x_i^T\beta)}$$
+
+For detailed information read: 
+
+[Multivariate semi-continuous proportionally constrained two-part fixed effects models and applications](https://journals.sagepub.com/doi/abs/10.1177/0962280218807730).
+
+
+```{r setup}
+library(BC2)
+```
+
+## ARI data from MEPARI trial
+
+Meditation or Exercise for Preventing Acute Respiratory Infection (MEPARI-2) is a comprehensive trial conducted at University of Wisconsin, School of Medicine and Public Health to investigate the effect of meditation and exercise on severity and duration of Acute Respiratory Infection (ARI).
+
+Direct links for information and data-sets of this trial are:
+
+[Full data](https://www.openicpsr.org/openicpsr/project/103581/version/V2/view)
+
+[Direct link to the ARI .csv file](https://www.openicpsr.org/openicpsr/project/103581/version/V2/view?path=/openicpsr/103581/fcr:versions/V2/ARI-Data/MEPARI1-2_ari_2017_1219.csv&type=file)
+
+This data-set is also available in BC2 and it can be accessed after loading the package:
+
+```{r echo=TRUE}
+ARI
+```
+
+In the following topics, we will demonstrate how to use BC2 package to fit BC2 model on the mentioned data-set.
+
+## Data wrangling
+
+About 36% of the participants didn't report any kind of ARI so ARI duration & ARI severity for these participants are zero which leads to creation of 2 semi-continuous responses.
+
+We want to evaluate the effects of the following variables as our predictors:
+
+```
+b_age, sex, b_bmi, trt_group, b_maas_score & b_sf12_physical
+```
+
+The two semi continuous responses are:
+
+```
+ari_duration14 & ari_auc21_14days
+```
+
+which are duration of ARI and Severity of ARI respectively.
+
+_**Note: Responses for participants that did not report any symptoms of ARI were left empty as missing values which we will change them to zero values to make the data suitable for BC2 modeling.**_ 
+
+```{r echo=TRUE}
+(data <- ARI %>% select(b_age,sex,b_bmi,trt_group,b_maas_score,
+                        
+                        b_sf12_physical,ari_duration14,ari_auc21_14days) %>%
+   
+   mutate_at(c('sex','trt_group'),as.factor) %>% 
+   
+   mutate_at(c('ari_duration14','ari_auc21_14days'),function(x){x[is.na(x)] <- 0 ; return(x)}) %>% 
+   
+   rename_all(~str_remove(.,'b_')))
+```
+
+## Data pre-processing
+
+### Distribution of responses:
+
+let's take a look at responses distributions. 
+
+To check for the normality of original responses we can do:
+
+```{r}
+data %>% select(contains('ari')) %>% map(shapiro.test)
+```
+
+As we see, none of the responses were normaly distributed (p-value<0.05).
+
+It is suggested to use some transformations based on procedures like Box-Cox on non-zero responses to create responses with distributions closer to normal (gaussian). For now and for illustraion in this vignette, we gonna stick with logarithmic transformation.
+
+### Standardizing numerical predictors
+
+For better predictive performance specially when numerical predictors have very different scales, it's better to standardize numerical predictors. We gonna leave it for now to stick to the illustration of the fitting process and not to expand this vignette more than it should!
+
+## BC2 model fitting
+
+```{r}
+ARI.fit <- bc2(pos.resps=names(data)[7:8],
+           
+               preds=names(data)[1:6],
+           
+               data=data,
+           
+               search.space=list(methods='BFGS',iterations=100),
+           
+               control.pars=NULL,
+           
+               parallel=T,
+           
+               core.nums=NULL,
+           
+               g.funs=log)
+```
+
+**Notes:**
+
+```search.space``` can be modified. User can leave it to be the default space (See help files!) or can change what is needed and leave the rest to be the defaults from the default search space.
+
+```control.pars``` is available to add extra optimization method specific parameters that user decides to use inside the ```search.space```.
+
+```g.funs``` is regularly a named list containing functions to be used for transformation of non-zero part of each response (names of the list are the names of the related responses) but it can also be a single function where this same function will be applied for transformation of non-zero parts of both responses.
+
+
+Based on the notes given above:
+
+* We only wanted to use BFGS method with 100 iterations as our optimization algorithm so we set them inside ```search.space``` and left starting points of coefficients, sigmas & ro to be the default ones in the default ```search.space```.
+
+* we wanted logarithmic transformation on both non-zero part of each response so we only set ```g.funs=log```. Of course we also could use:
+
+```
+g.funs = list('ari_duration14'=log,'ari_auc21_14days'=log)
+
+or
+
+g.funs = list(log,log) 
+
+When the list has no names and different functions are to be used to transform each of the responses, different specified functions will be applied on responses in the same order that responses were given in the bc2 function.
+```
+Let's take a look at bc2's default output:
+
+```{r}
+ARI.fit
+```
+
+**Computational highlights:**
+
+* Standard errors in logistic part are calculated from the hessian matrix.
+
+* Standard errors of positive (non-zero) parts are calculated via delta method.
+
+* p-values are obtained from chi-square distribution by squaring the Z-value given in the tables.
+
+Again for more detailed information go check out:
+
+[Multivariate semi-continuous proportionally constrained two-part fixed effects models and applications](https://journals.sagepub.com/doi/abs/10.1177/0962280218807730).
+
+### Structure of results in BC2 fits
+
+The default print method of bc2 fits is summary tables of different parts of BC2 models but these summary tables are part of a much more comprehensive output that can be viewed by saving the bc2 fit into an object.
+
+The included components are:
+
+* ```Data```: Full cleaned data-set (non-matching responses and rows with missing values are removed here).
+
+_Note 1: If transformation via g.funs argument was done, un-transformed responses are included in Data part._
+
+_Note 2: Since bc2 removes rows with missing values and rows with non matching responses (when both responses aren't zero at the same time), It's highly recommended to look into these problems if you don't want to lose any records._
+
+* ```Structured data```: Divided structured data including X: full predictors matrix, X1: predictors matrix of the non-zero parts, vectors containing non-zero responses.
+
+* ```Optimization info```: A tibble containing full information of optimization on combinations that were given in the ```search.space``` argument.
+
+* ```Best combination```: Best converged combination among candidate in ```search.space```. If convergence wasn't achieved in any combinations, a warning message will be returned for furthur assessments or expansion of ```search.space```.
+
+We've saved our model in ```ARI.fit``` so let's take a look at it's components:
+
+_Note: Components related to predictors and responses in Structured data are matrices or vectors so for simplicity we will show their first 10 values here._
+
+```{r}
+options(width = 300)
+
+ARI.fit[-which(names(ARI.fit)=='Final tables')] %>% map_at('Structured data',~map(.,head))
+
+#ARI.fit$`Final tables` #Which is the default output method of the fit that was given above!
+```
+
+## BC2 model evaluation tools
+
+In BC2 package, typical evaluation methods were implemented for class bc2:
+
+**Fitted values:**
+
+```{r}
+fitted(ARI.fit)
+```
+
+Which is a tibble with 2 columns containing fitted values for each of the responses.
+
+**Prediction:**
+
+Like typical predict, a newdata object will be given and predictions will come out.
+
+_Note 1: newdata argument must be data-set or a tibble containing predictors of new records._
+
+_Note 2: interval argument is available to set whether 'confidence' or 'prediction' interval is required. Of course prediction intervals are wider than confidence intervals._
+
+prediction interval for $x_{0}$:
+
+$$\hat{y}_{0}\pm t_{n-p}^{\alpha/2} \hat{\sigma} \sqrt{x_{0}^{T}(X^{T}X)^{-1}x_{0}+1}$$
+confidence interval for $x_{0}$:
+
+$$\hat{y}_{0}\pm t_{n-p}^{\alpha/2} \hat{\sigma} \sqrt{x_{0}^{T}(X^{T}X)^{-1}x_{0}}$$
+_Note 3: alpha argument is available to control how wide the prediction or confidence intervals should be._
+
+We extract 3 of the non-zero records from ```Structured data``` part of ```ARI.fit``` to illustrate the usage of predict method on bc2 class.
+
+Let's extract both prediction and confidence intervals for out prediction all at once:
+
+```{r}
+
+list('prediction interval'='prediction','confidence interval'='confidence') %>% 
+  
+  map(~predict(ARI.fit,ARI.fit$`Structured data`$X1 %>% as_tibble %>% 
+                  
+                  slice(c(1,17,44)),interval=.,alpha=.1))
+```
+
+As we can see, predict outputs a tibble containing predictions along with their requested intervals (prediction or confidence intervals based on requested alpha level) for each response.
+
+**Residuals:**
+
+```{r}
+residuals(ARI.fit) # or resid(ARI.fit)
+```
+
+Which again is a tibble with 2 columns (like ```fitted(ARI.fit)```) but this time containing residuals related to each of the responses.
+
+**Diagnostic plots**
+
+plot method for bc2 class supports 3 types:
+
+* ```responses```: Outputs density plots of original (non-zero) responses. (if transformation was done through ```g.funs``` argument, this type shows un-transformed non-zero responses).
+
+* ```residulas```: Outputs density & residuals vs fitted values for non-zero parts of responses.
+
+* ```fit```: Outputs actual vs fitted values of non-zero values of each response.
+
+Let's check them out:
+
+```{r,dpi=100,fig.align='center',fig.width=6.9,fig.height=3.4}
+plot(ARI.fit,type='responses')
+```
+
+```{r,dpi=100,fig.align='center',fig.width=6.9,fig.height=5}
+plot(ARI.fit,type='residuals')
+```
+
+```{r,dpi=100,fig.align='center',fig.width=6.9,fig.height=3.4}
+plot(ARI.fit,type='fit')
+```
+
+
