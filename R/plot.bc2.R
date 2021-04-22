@@ -13,7 +13,7 @@
 #'
 #' For \code{type='fit'}, actual vs fitted values of each response will be returned.
 #'
-#' @import tidyverse magrittr msm parallel doParallel future furrr cowplot
+#' @import tidyverse magrittr msm future furrr cowplot
 #'
 #' @export
 

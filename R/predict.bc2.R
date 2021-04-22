@@ -11,7 +11,7 @@
 #'
 #' @return A list of length 2. Each slot of this list contains a tibble with the information of predictions and their related intervals for each response.
 #'
-#' @import tidyverse magrittr msm parallel doParallel future furrr cowplot
+#' @import tidyverse magrittr msm future furrr cowplot
 #'
 #' @export
 

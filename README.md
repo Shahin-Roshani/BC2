@@ -13,7 +13,7 @@ constrained two-part fixed effects models.
 
 ## Installation
 
-You can install the released version of BC2 (Version: 0.1.0) from
+You can install the released version of BC2 (Version: 0.1.1) from
 [github](https://github.com) with:
 
 ``` r

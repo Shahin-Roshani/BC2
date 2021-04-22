@@ -55,7 +55,7 @@
 #'
 #' @references \url{https://journals.sagepub.com/doi/abs/10.1177/0962280218807730}
 #'
-#' @import tidyverse magrittr msm parallel doParallel future furrr cowplot
+#' @import tidyverse magrittr msm future furrr cowplot
 #'
 #' @export
 
@@ -286,15 +286,11 @@ bc2 <- function(pos.resps,preds,data,search.space=NULL,
 
     if (is.null(core.nums)){
 
-      core.nums <- parallel::detectCores()/2
+      core.nums <- future::availableCores()/2
 
     }
 
-    cluster <- parallel::makeCluster(core.nums)
-
-    doParallel::registerDoParallel(cluster)
-
-    future::plan(multisession)
+    future::plan(future::multisession(),workers=core.nums)
 
     start <- Sys.time()
 
@@ -308,13 +304,11 @@ bc2 <- function(pos.resps,preds,data,search.space=NULL,
 
                                        append(control.pars) %>%
 
-                                       (function(x) x[unique(names(x))])),
+                                       (function(x) x[unique(names(x))]))) %>%
 
-                         scheduling=Inf) %>% suppressWarnings -> optim_info
+      suppressWarnings -> optim_info
 
     end <- Sys.time()
-
-    parallel::stopCluster(cluster)
 
 
   } else{

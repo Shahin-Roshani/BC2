@@ -24,7 +24,7 @@ Fitting and evaluating Multivariate semi-continuous proportionally constrained t
 
 ## Installation
 
-You can install the released version of BC2 (Version: 0.1.0) from [github](https://github.com) with:
+You can install the released version of BC2 (Version: 0.1.1) from [github](https://github.com) with:
 
 ``` r
 install.packages('devtools') #If you haven't installed it yet!

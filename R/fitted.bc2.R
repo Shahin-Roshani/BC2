@@ -8,7 +8,7 @@
 #'
 #' @return A tibble with 2 columns containing fitted values of each response.
 #'
-#' @import tidyverse magrittr msm parallel doParallel future furrr cowplot
+#' @import tidyverse magrittr msm future furrr cowplot
 #'
 #' @export
 
