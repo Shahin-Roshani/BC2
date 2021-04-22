@@ -24,10 +24,11 @@ devtools::install_github('Shahin-Roshani/BC2')
 
 ## Links:
 
-[Repository in github]()
+[Repository in github](https://github.com/Shahin-Roshani/BC2)
 
-[Package website for BC2]()
+[Package website for BC2](https://shahin-roshani.github.io/BC2)
 
-[Comprehensive vignette]()
+[Comprehensive
+vignette](https://shahin-roshani.github.io/BC2/articles/BC2.html)
 
-[RPubs article]()
+[RPubs article](https://rpubs.com/ShahinRoshani/BC2)
