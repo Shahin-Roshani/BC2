@@ -15,6 +15,9 @@ A tibble with 2 columns containing fitted values of each response.
 \description{
 fitted method for bc2 fits.
 }
+\seealso{
+\url{https://shahin-roshani.github.io/BC2/}
+}
 \author{
 Shahin Roshani
 }

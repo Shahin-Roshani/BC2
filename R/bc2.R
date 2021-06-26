@@ -5,41 +5,41 @@
 #' @author Shahin Roshani
 #'
 #' @param pos.resps A character vector of length two containing the names of model's two responses.
-#' @param preds A character vector containing the names of predictors to be used in all parts of the model.
+#' @param preds A character vector containing the names of predictors to be used mutually in all parts of the model (logistic & positive parts).
 #' @param data Data containing responses and predictors.
 #' @param search.space A named list containing usual parameters for controlling the optimization process of log-likelihood function.
 #'
 #' All combinations of the given values in the list will be considered. Valid arguments inside the list are:
 #'
 #' \itemize{
-#' \item coeffs.start: Numeric vector containing values to be used as starting points of intercepts (a0, a1, a2), coefficients and constraints (b1 & b2) during optimization.
-#' \item sigmas.start: Numeric vector containing values to be used as starting points of sigma1 & sigma2 during optimization.
-#' \item ro.start: Numeric vector containing values to be used as starting points of ro during optimization.
-#' \item methods: Optimization methods to be tested for optimizing the log-likelihood function.
-#' \item iterations: Number of iterations to achieve the convergence in optimization process.
+#' \item \code{coeffs.start}: Numeric vector containing values to be used as starting points of intercepts (a0, a1, a2), coefficients and constraints (b1 & b2) during optimization.
+#' \item \code{sigmas.start}: Numeric vector containing values to be used as starting points of sigma1 & sigma2 during optimization.
+#' \item \code{ro.start}: Numeric vector containing values to be used as starting points of ro during optimization.
+#' \item \code{ro.start}: Optimization methods to be tested for optimizing the log-likelihood function.
+#' \item \code{iterations}: Number of iterations to achieve the convergence in optimization process.
 #' }
 #'
-#' Default is NULL where a pre-defined search space will be used. See part 1 in Details.
-#' @param control.pars Additional control parameters used by optim function. Default is NULL. See Details section in \code{?optim}.
-#' @param parallel Logical indicating whether optimization of different combinations in search.space must be done in parallel mode or not. Default is NULL.
-#' @param core.nums Number of CPU cores to be used for parallel computation. Default is NULL where half of the CPU cores will be used. See \code{?detectCores}.
+#' Default is \code{NULL} where a pre-defined search space will be used. See part 1 in Details.
+#' @param control.pars Additional control parameters used by optim function. Default is \code{NULL}. See Details section in \code{?optim}.
+#' @param parallel Logical indicating whether optimization of different combinations in search.space must be done in parallel mode or not. Default is \code{FALSE}.
+#' @param core.nums Number of CPU cores to be used for parallel computation. Default is \code{NULL} where half of the CPU cores will be used. See \code{?detectCores}.
 #' @param g.funs A single function or a list of length two containing the functions to be used for transforming non-zero responses.
 #'
-#' If \code{g.funs} were specified by user, $Data part of return object will contain the un-transformed responses while structured data part will include transformed responses based on functions in \code{g.funs}.
+#' If \code{g.funs} were specified by user, \code{$Data} part of return object will contain the un-transformed responses while structured data part will include transformed responses based on functions in \code{g.funs}.
 #'
-#' @return S3 print class of method 'bc2' which is A list of length 3 containing fitting information of the logistic and the two positive parts.
+#' @return S3 print class of method \code{'bc2'} which is A list of length 3 containing fitting information of the logistic and the two positive parts.
 #'
 #' This list is a part of a more comprehensive return that can be accessed when the fit is saved in an object. The full return set contains:
 #'
 #' \itemize{
-#' \item $Data: Cleaned data-set with original and un-transformed responses. Also see \code{g.funs} argument.
-#' \item $`Structured data`: A list of divided and cleaned data to be used in the fitting process. If \code{g.funs} were specified, transformed responses will be included in this part.
-#' \item $`Optimization info`: A tibble containing information about evaluation of different combinations that was given in search.space for optimization.
-#' \item $`Best combination`: The best combination of parameters that results in the best set of estimations.
-#' \item $`Final tables`: The default print output of class bc2 that was mentioned earlier.
+#' \item \code{$Data}: Cleaned data-set with original and un-transformed responses. Also see \code{g.funs} argument.
+#' \item \code{$`Structured data`}: A list of divided and cleaned data to be used in the fitting process. If \code{g.funs} were specified, transformed responses will be included in this part.
+#' \item \code{$`Optimization info`}: A tibble containing information about evaluation of different combinations that was given in search.space for optimization.
+#' \item \code{$`Best combination`}: The best combination of parameters that results in the best set of estimations.
+#' \item \code{$`Final tables`}: The default print output of class bc2 that was mentioned earlier.
 #' }
 #'
-#' @details When search.space is NULL, a pre-defined search space will be used which is:
+#' @details When search.space is \code{NULL}, a pre-defined search space will be used which is:
 #'
 #' \preformatted{
 #' list(coeffs.start=seq(-1,1,1),
@@ -54,6 +54,8 @@
 #' }
 #'
 #' @references \url{https://journals.sagepub.com/doi/abs/10.1177/0962280218807730}
+#'
+#' @seealso \url{https://shahin-roshani.github.io/BC2/}
 #'
 #' @import tidyverse magrittr msm future furrr cowplot
 #'

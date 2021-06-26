@@ -34,6 +34,8 @@ $$\frac{1}{2\sigma_2^2(1-\rho^2)}\sum_{d+}{(y_{i2}-a_2-b_2x_i^T\beta)^2}+$$
 
 $$\frac{\rho}{\sigma_1\sigma_2(1-\rho^2)}\sum_{d+}{(y_{i1}-a_1-b_1x_i^T\beta)(y_{i2}-a_2-b_2x_i^T\beta)}$$
 
+Currently, BC2 only supports situations where predictor(s) are mutual between logistic and the positive parts.
+
 For detailed information read: 
 
 [Multivariate semi-continuous proportionally constrained two-part fixed effects models and applications](https://journals.sagepub.com/doi/abs/10.1177/0962280218807730).
@@ -123,12 +125,6 @@ ARI.fit <- bc2(pos.resps=names(data)[7:8],
                data=data,
            
                search.space=list(methods='BFGS',iterations=100),
-           
-               control.pars=NULL,
-           
-               parallel=T,
-           
-               core.nums=NULL,
            
                g.funs=log)
 ```

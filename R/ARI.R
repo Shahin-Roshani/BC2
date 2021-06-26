@@ -4,6 +4,8 @@
 #'
 #' @format See References.
 #'
+#' @seealso \url{https://shahin-roshani.github.io/BC2/}
+#'
 #' @references Full data package:
 #'
 #' \url{https://www.openicpsr.org/openicpsr/project/103581/version/V2/view}

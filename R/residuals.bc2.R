@@ -8,6 +8,8 @@
 #'
 #' @return A tibble with 2 columns containing residuals related to each response.
 #'
+#' @seealso \url{https://shahin-roshani.github.io/BC2/}
+#'
 #' @import tidyverse magrittr msm future furrr cowplot
 #'
 #' @export

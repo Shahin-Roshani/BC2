@@ -11,15 +11,18 @@
 
 \item{newdata}{Data (tibble or data.frame) containing predictor information of new records.}
 
-\item{interval}{Type of interval for predictions. Valid inputs are 'confidence' or 'interval'. Default is 'interval'.}
+\item{interval}{Type of interval for predictions. Valid inputs are \code{'confidence'} or \code{'interval'}. Default is \code{'interval'}.}
 
-\item{alpha}{alpha value for creating the interval(s) of new prediction(s). Default is 0.05.}
+\item{alpha}{alpha value for creating the interval(s) of new prediction(s). Default is \emph{0.05}.}
 }
 \value{
 A list of length 2. Each slot of this list contains a tibble with the information of predictions and their related intervals for each response.
 }
 \description{
 predict method for bc2 fits.
+}
+\seealso{
+\url{https://shahin-roshani.github.io/BC2/}
 }
 \author{
 Shahin Roshani

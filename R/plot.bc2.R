@@ -5,13 +5,15 @@
 #' @author Shahin Roshani
 #'
 #' @param object a fitted object of class inheriting from "bc2".
-#' @param type Type of plot to be drawn. Valid inputs are 'responses', 'residuals' or 'fit'. Default is 'residuals'.
+#' @param type Type of plot to be drawn. Valid inputs are \code{'responses'}, \code{'residuals'} or \code{'fit'}. Default is \code{'residuals'}.
 #'
 #' @return When \code{type='responses'}, density plots of original and un-transformed responses (non-zero) will be returned (unless transformation was done directly on non-zero responses and not through the \code{g.funs} arguemt).
 #'
 #' When \code{type='residuals'}, density plot of residuals plus residuals vs fitted values plot for each response will be returned.
 #'
 #' For \code{type='fit'}, actual vs fitted values of each response will be returned.
+#'
+#' @seealso \url{https://shahin-roshani.github.io/BC2/}
 #'
 #' @import tidyverse magrittr msm future furrr cowplot
 #'

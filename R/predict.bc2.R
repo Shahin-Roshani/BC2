@@ -6,10 +6,12 @@
 #'
 #' @param object a fitted object of class inheriting from "bc2".
 #' @param newdata Data (tibble or data.frame) containing predictor information of new records.
-#' @param interval Type of interval for predictions. Valid inputs are 'confidence' or 'interval'. Default is 'interval'.
-#' @param alpha alpha value for creating the interval(s) of new prediction(s). Default is 0.05.
+#' @param interval Type of interval for predictions. Valid inputs are \code{'confidence'} or \code{'interval'}. Default is \code{'interval'}.
+#' @param alpha alpha value for creating the interval(s) of new prediction(s). Default is \emph{0.05}.
 #'
 #' @return A list of length 2. Each slot of this list contains a tibble with the information of predictions and their related intervals for each response.
+#'
+#' @seealso \url{https://shahin-roshani.github.io/BC2/}
 #'
 #' @import tidyverse magrittr msm future furrr cowplot
 #'

@@ -22,4 +22,7 @@ Direct link to the .csv file:
 
 \url{https://www.openicpsr.org/openicpsr/project/103581/version/V2/view?path=/openicpsr/103581/fcr:versions/V2/ARI-Data/MEPARI1-2_ari_2017_1219.csv&type=file}
 }
+\seealso{
+\url{https://shahin-roshani.github.io/BC2/}
+}
 \keyword{datasets}
