@@ -6,9 +6,10 @@
 # BC2
 
 <!-- badges: start -->
-
 [![CodeFactor](https://www.codefactor.io/repository/github/Shahin-Roshani/BC2/badge)](https://www.codefactor.io/repository/github/Shahin-Roshani/BC2)
+[![](https://codecov.io/gh/Shahin-Roshani/BC2/branch/master/graph/badge.svg)](https://codecov.io/gh/Shahin-Roshani/BC2)
 
+[![](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://lifecycle.r-lib.org/articles/stages.html#maturing)
 [![](https://img.shields.io/github/last-commit/Shahin-Roshani/BC2.svg)](https://github.com/Shahin-Roshani/BC2/commits/master)
 
 [![](https://img.shields.io/badge/devel%20version-0.1.1-blue.svg)](https://github.com/Shahin-Roshani/BC2)
