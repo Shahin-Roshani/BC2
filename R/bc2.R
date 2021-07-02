@@ -4,8 +4,9 @@
 #'
 #' @author Shahin Roshani
 #'
-#' @param pos.resps A character vector of length two containing the names of model's two responses.
-#' @param preds A character vector containing the names of predictors to be used mutually in all parts of the model (logistic & positive parts).
+#' @param logistic A one sided formula with only right hand side describing the predictors to be included in the logistic part of the model.
+#' @param positive1 A formula describing the response and predictors to be used as the first positive part of the model.
+#' @param positive2 A formula describing the response and predictors to be used as the second positive part of the model.
 #' @param data Data containing responses and predictors.
 #' @param search.space A named list containing usual parameters for controlling the optimization process of log-likelihood function.
 #'
@@ -61,16 +62,21 @@
 #'
 #' @export
 
-bc2 <- function(pos.resps,preds,data,search.space=NULL,
+bc2 <- function(logistic,positive1,positive2,data,search.space=NULL,
 
                 control.pars=NULL,parallel=F,core.nums=NULL,g.funs=NULL){
 
 
-  if (!is.character(pos.resps) | length(pos.resps %>% unique)!=2){
+  pos.resps <- list(positive1,positive2) %>%
 
-    stop('pos.resps must be character vector of length two!',call.=F)
+    map_chr(~attr(terms(.,data=data),which='variables')[[2]] %>% as.character)
 
-  }
+  preds <- attr(terms(logistic,data=data),which='term.labels')
+
+  preds1 <- attr(terms(positive1,data=data),which='term.labels')
+
+  preds2 <- attr(terms(positive2,data=data),which='term.labels')
+
 
   if ((!is.function(g.funs) & length(g.funs)==1) | (is.list(g.funs) & length(g.funs)!=2)){
 
@@ -135,7 +141,7 @@ bc2 <- function(pos.resps,preds,data,search.space=NULL,
 
   results <- list()
 
-  results$Data <- data %>% select(pos.resps,everything())
+  results$Data <- data %>% select(all_of(pos.resps),everything())
 
 
   if(!is.null(g.funs)){
@@ -189,7 +195,9 @@ bc2 <- function(pos.resps,preds,data,search.space=NULL,
   data %<>% na.omit
 
 
-  X <- model.matrix(~.,data=data)[,-1] %>% as.data.frame
+  X <- model.matrix(str_c('~',str_c(c(preds,pos.resps),collapse='+')) %>%
+
+                      as.formula,data=data)[,-1] %>% as.data.frame
 
   pos_index <- which(X[[pos.resps[1]]]!=0)
 
@@ -197,64 +205,100 @@ bc2 <- function(pos.resps,preds,data,search.space=NULL,
 
   y2 <- X[[pos.resps[2]]][pos_index]
 
-  X1 <- as_tibble(X) %>% slice(pos_index) %>%
+  X1 <- model.matrix(str_c('~',str_c(c(preds1,pos.resps),collapse='+')) %>%
 
-    select(-all_of(pos.resps)) %>% as.matrix
+                       as.formula,data=data)[,-1] %>% as.data.frame %>%
 
-  X %<>% as_tibble %>% select(-all_of(pos.resps)) %>% as.matrix
+    slice(pos_index)
+
+  X2 <- model.matrix(str_c('~',str_c(c(preds2,pos.resps),collapse='+')) %>%
+
+                       as.formula,data=data)[,-1] %>% as.data.frame %>%
+
+    slice(pos_index)
+
+  tempp <- function(xx){
+
+    return(
+
+      xx %<>% as_tibble %>% select(-all_of(pos.resps)) %>% as.matrix
+
+    )
+
+  }
+
+  X %<>% tempp ; X1 %<>% tempp ; X2 %<>% tempp
 
 
-  results$`Structured data` <- list(X,X1,y1,y2) %>%
+  results$`Structured data` <- list(X,X1,X2,y1,y2) %>%
 
     (function(x){
 
-      names(x) <- c('X','X1',pos.resps)
+      names(x) <- c('X','X1','X2',pos.resps)
 
       return(x)
 
     })
 
 
+  logistic_vars <- colnames(X)
+
+  positive1_vars <- colnames(X1)
+
+  positive2_vars <- colnames(X2)
+
+
+
   neg_loglik <- function(theta){
 
-    k <- ncol(X)
+    names(theta) <- c('a0','a1','a2',
+
+                      unique(c(logistic_vars,positive1_vars,positive2_vars)),
+
+                      'b1','b2','sigma1','sigma2','ro')
 
     n1 <- nrow(X1)
 
-    a0 <- theta[1]
+    a0 <- theta['a0']
 
-    a1 <- theta[2]
+    a1 <- theta['a1']
 
-    a2 <- theta[3]
+    a2 <- theta['a2']
 
-    beta <- theta[4:(k+3)]
+    beta <- theta[logistic_vars]
+
+    beta1 <- theta[positive1_vars]
+
+    beta2 <- theta[positive2_vars]
 
     xbeta <- X%*%beta
 
-    xbeta1 <- X1%*%beta
+    x1beta1 <- X1%*%beta1
 
-    b1 <- theta[k+4]
+    x2beta2 <- X2%*%beta2
 
-    b2 <- theta[k+5]
+    b1 <- theta['b1']
 
-    sigma1 <- theta[k+6]
+    b2 <- theta['b2']
 
-    sigma2 <- theta[k+7]
+    sigma1 <- theta['sigma1']
 
-    ro <- theta[k+8]
+    sigma2 <- theta['sigma2']
+
+    ro <- theta['ro']
 
 
     loglik <-
 
       -(n1/2)*(log(sigma1^2)+log(sigma2^2)+log(1-ro^2))-
 
-      sum(log(1+exp(a0+xbeta)))+n1*a0+sum(xbeta1)-
+      sum(log(1+exp(a0+xbeta)))+n1*a0+sum(x1beta1)-
 
-      (1/(2*(sigma1^2)*(1-ro^2)))*sum((y1-a1-b1*xbeta1)^2)-
+      (1/(2*(sigma1^2)*(1-ro^2)))*sum((y1-a1-b1*x1beta1)^2)-
 
-      (1/(2*(sigma2^2)*(1-ro^2)))*sum((y2-a2-b2*xbeta1)^2)+
+      (1/(2*(sigma2^2)*(1-ro^2)))*sum((y2-a2-b2*x2beta2)^2)+
 
-      (ro/(sigma1*sigma2*(1-ro^2)))*sum((y1-a1-b1*xbeta1)*(y2-a2-b2*xbeta1))
+      (ro/(sigma1*sigma2*(1-ro^2)))*sum((y1-a1-b1*x1beta1)*(y2-a2-b2*x2beta2))
 
     return(-loglik)
 
@@ -281,8 +325,10 @@ bc2 <- function(pos.resps,preds,data,search.space=NULL,
   },otherwise=NA)
 
 
-  cat('\n1. Finding the best combination from the given search space...\n\n')
+  mmax <- list(X,X1,X2) %>% map_dbl(ncol) %>% max
 
+
+  cat('\n1. Finding the best combination from the given search space...\n\n')
 
   if (parallel){
 
@@ -298,7 +344,7 @@ bc2 <- function(pos.resps,preds,data,search.space=NULL,
 
     combs %>%
 
-      furrr::future_pmap(~safe_optim(c(rep(..1,ncol(X)+5),rep(..2,2),..3),
+      furrr::future_pmap(~safe_optim(c(rep(..1,mmax+5),rep(..2,2),..3),
 
                                      neg_loglik,method=..4,hessian=F,
 
@@ -317,15 +363,11 @@ bc2 <- function(pos.resps,preds,data,search.space=NULL,
 
     start <- Sys.time()
 
-    combs %>% pmap(~safe_optim(c(rep(..1,ncol(X)+5),rep(..2,2),..3),
+    combs %>% pmap(~safe_optim(c(rep(..1,mmax+5),rep(..2,2),..3),
 
                                neg_loglik,method=..4,hessian=F,
 
-                               control=list(maxit=..5) %>%
-
-                                 append(control.pars) %>%
-
-                                 (function(x) x[unique(names(x))]))) %>%
+                               control=list(maxit=..5))) %>%
 
       suppressWarnings -> optim_info
 
@@ -336,7 +378,16 @@ bc2 <- function(pos.resps,preds,data,search.space=NULL,
   cat('   Done in:',(end-start) %>% as.character.POSIXt %>% str_c(.,'.\n\n'))
 
 
-  combs %<>% cbind(.,optim_info %>% reduce(rbind))
+  if(all(is.na(optim_info))){
+
+    stop('Estimations could not be obtained on any combination in the search.space!',call.=F)
+
+  }
+
+
+  combs %<>% slice(which(!is.na(optim_info))) %>%
+
+    cbind(.,optim_info %>% .[!is.na(.)] %>% reduce(rbind))
 
 
   results$`Optimization info` <- combs %>% as_tibble
@@ -364,7 +415,7 @@ bc2 <- function(pos.resps,preds,data,search.space=NULL,
   cat('2. Estimating parameters using the obtained best combination...\n\n')
 
 
-  optim(c(rep(starts$coeffs,ncol(X)+5),
+  optim(c(rep(starts$coeffs,mmax+5),
 
           rep(starts$sigmas,2),
 
@@ -376,51 +427,117 @@ bc2 <- function(pos.resps,preds,data,search.space=NULL,
 
     suppressWarnings -> opt
 
+
   cov_mat <- solve(opt$hessian)
+
+
+  if (any(diag(cov_mat)<0)){
+
+    warning('Some Standard Errors cannot be calculated due to negative values in diagonal elements of hessian matrix that was caused by the inability of convergence in the given search.space!',call.=F)
+
+  }
+
 
   names(opt$par) = colnames(cov_mat) = rownames(cov_mat) <-
 
-    c('a0','a1','a2',colnames(X),'b1','b2','sigma1','sigma2','ro')
+    c('a0','a1','a2',
+
+      unique(c(logistic_vars,positive1_vars,positive2_vars)),
+
+      'b1','b2','sigma1','sigma2','ro')
+
 
 
   opt$par %>% as.data.frame %>% rownames_to_column() %>%
 
     rename('Estimate'='.','Coeff'='rowname') %>%
 
-    mutate(Std.Err=sqrt(diag(cov_mat)),betas=Coeff %in% colnames(X)) %>%
+    mutate(Std.Err=sqrt(diag(cov_mat)),
+
+           betas=Coeff %in% unique(c(logistic_vars,
+
+                                     positive1_vars,
+
+                                     positive2_vars))) %>%
 
     split(.$betas) %>% map(~select(.,-betas)) %>%
 
-    (function(x){names(x) <- c('fixed','betas') ; return(x)}) -> base_set
+    (function(x){names(x) <- c('fixed','betas') ; return(x)}) %>%
+
+    suppressWarnings -> base_set
 
 
-  b1_est <- base_set$fixed$Estimate[base_set$fixed$Coeff=='b1']
+  base_set %<>% map(function(x){
 
-  b2_est <- base_set$fixed$Estimate[base_set$fixed$Coeff=='b2']
-
-
-  logistic_part <- rbind(base_set$fixed %>% filter(Coeff=='a0'),base_set$betas)
-
-
-  pexpand <- function(x,b_est,b_char){
-
-    x %<>% mutate_at('Estimate',~.*b_est)
-
-    x$Std.Err <- as.list(x$Coeff) %>%
-
-      map_dbl(~msm::deltamethod(~x1*x2,
-
-                                opt$par[c(.,b_char)],
-
-                                cov_mat[c(.,b_char),c(.,b_char)]))
+    row.names(x) <- 1:nrow(x)
 
     return(x)
 
+  })
+
+
+  base_set$betas %<>% mutate(lg=Coeff %in% logistic_vars,
+
+                             p1=Coeff %in% positive1_vars,
+
+                             p2=Coeff %in% positive2_vars) %>%
+
+    gather('key','value',4:6) %>% split(.$key) %>%
+
+    map(~filter(.,value) %>% select(-any_of(c('key','value')))) %>%
+
+    .[c('lg','p1','p2')]
+
+
+  for (i in 2:3){
+
+    base_set$betas[[i]] %<>%
+
+      mutate(x=ifelse(Coeff %in% base_set$betas[[1]]$Coeff,
+
+                      base_set$fixed$Estimate[base_set$fixed$Coeff==str_c('b',i-1)],1)) %>%
+
+      mutate(Estimate=Estimate*x)
+
+
+    for (j in 1:nrow(base_set$betas[[i]])){
+
+      if (base_set$betas[[i]]$x[j]!=1){
+
+        base_set$betas[[i]]$Std.Err[j] <-
+
+          msm::deltamethod(~x1*x2,
+
+                           opt$par[c(base_set$betas[[i]]$Coeff[j],
+
+                                     str_c('b',i-1))],
+
+                           cov_mat[c(base_set$betas[[i]]$Coeff[j],
+
+                                     str_c('b',i-1)),
+
+                                   c(base_set$betas[[i]]$Coeff[j],
+
+                                     str_c('b',i-1))])
+
+      }
+
+    }
+
+
   }
+
+  base_set$betas %<>% map_at(-1,~select(.,-x))
+
+
+  logistic_part <- rbind(base_set$fixed %>% filter(Coeff=='a0'),
+
+                         base_set$betas$lg)
+
 
   positive_part1 <- rbind(base_set$fixed %>% filter(Coeff=='a1'),
 
-                          base_set$betas %>% pexpand(.,b1_est,'b1'),
+                          base_set$betas$p1,
 
                           base_set$fixed %>%
 
@@ -429,7 +546,7 @@ bc2 <- function(pos.resps,preds,data,search.space=NULL,
 
   positive_part2 <- rbind(base_set$fixed %>% filter(Coeff=='a2'),
 
-                          base_set$betas %>% pexpand(.,b2_est,'b2'),
+                          base_set$betas$p2,
 
                           base_set$fixed %>%
 
@@ -466,4 +583,3 @@ bc2 <- function(pos.resps,preds,data,search.space=NULL,
   return(results)
 
 }
-

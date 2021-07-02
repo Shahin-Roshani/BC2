@@ -34,8 +34,6 @@ $$\frac{1}{2\sigma_2^2(1-\rho^2)}\sum_{d+}{(y_{i2}-a_2-b_2x_i^T\beta)^2}+$$
 
 $$\frac{\rho}{\sigma_1\sigma_2(1-\rho^2)}\sum_{d+}{(y_{i1}-a_1-b_1x_i^T\beta)(y_{i2}-a_2-b_2x_i^T\beta)}$$
 
-Currently, BC2 only supports situations where predictor(s) are mutual between logistic and the positive parts.
-
 For detailed information read: 
 
 [Multivariate semi-continuous proportionally constrained two-part fixed effects models and applications](https://journals.sagepub.com/doi/abs/10.1177/0962280218807730).
@@ -67,17 +65,15 @@ In the following topics, we will demonstrate how to use BC2 package to fit BC2 m
 
 About 36% of the participants didn't report any kind of ARI so ARI duration & ARI severity for these participants are zero which leads to creation of 2 semi-continuous responses.
 
+The two semi continuous responses for the first & second parts are:
+
+```ari_duration14``` & ```ari_auc21_14days```.
+
 We want to evaluate the effects of the following variables as our predictors:
 
-```
-b_age, sex, b_bmi, trt_group, b_maas_score & b_sf12_physical
-```
-
-The two semi continuous responses are:
-
-```
-ari_duration14 & ari_auc21_14days
-```
+```age```, ```sex```, ```bmi```, ```trt_group```, ```maas_score``` for logistic and the model on ```ari_duration14```.
+               
+```age```, ```sex```, ```bmi```, ```trt_group``` for the model on ```ari_auc21_14days```.
 
 which are duration of ARI and Severity of ARI respectively.
 
@@ -118,14 +114,14 @@ For better predictive performance specially when numerical predictors have very 
 ## BC2 model fitting
 
 ```{r}
-ARI.fit <- bc2(pos.resps=names(data)[7:8],
-           
-               preds=names(data)[1:6],
-           
+ARI.fit <- bc2(logistic=~age+sex+bmi+trt_group+maas_score,
+               
+               positive1=ari_duration14~age+sex+bmi+trt_group+maas_score,
+               
+               positive2=ari_auc21_14days~age+sex+bmi+trt_group,
+               
                data=data,
-           
-               search.space=list(methods='BFGS',iterations=100),
-           
+               
                g.funs=log)
 ```
 
@@ -144,15 +140,10 @@ Based on the notes given above:
 
 * we wanted logarithmic transformation on both non-zero part of each response so we only set ```g.funs=log```. Of course we also could use:
 
-```
-g.funs = list('ari_duration14'=log,'ari_auc21_14days'=log)
+```g.funs = list('ari_duration14'=log,'ari_auc21_14days'=log)``` or ```g.funs = list(log,log)```.
 
-or
+*When the list has no names and different functions are to be used to transform each of the responses, different specified functions will be applied on responses in the same order that responses were given in the bc2 function.*
 
-g.funs = list(log,log) 
-
-When the list has no names and different functions are to be used to transform each of the responses, different specified functions will be applied on responses in the same order that responses were given in the bc2 function.
-```
 Let's take a look at bc2's default output:
 
 ```{r}
@@ -183,7 +174,7 @@ _Note 1: If transformation via g.funs argument was done, un-transformed response
 
 _Note 2: Since bc2 removes rows with missing values and rows with non matching responses (when both responses aren't zero at the same time), It's highly recommended to look into these problems if you don't want to lose any records._
 
-* ```Structured data```: Divided structured data including X: full predictors matrix, X1: predictors matrix of the non-zero parts, vectors containing non-zero responses.
+* ```Structured data```: Divided structured data including X: full predictors matrix, X1 & X2: predictors matrix of the non-zero parts, vectors containing non-zero responses.
 
 * ```Optimization info```: A tibble containing full information of optimization on combinations that were given in the ```search.space``` argument.
 
@@ -229,17 +220,20 @@ confidence interval for $x_{0}$:
 $$\hat{y}_{0}\pm t_{n-p}^{\alpha/2} \hat{\sigma} \sqrt{x_{0}^{T}(X^{T}X)^{-1}x_{0}}$$
 _Note 3: alpha argument is available to control how wide the prediction or confidence intervals should be._
 
-We extract 3 of the non-zero records from ```Structured data``` part of ```ARI.fit``` to illustrate the usage of predict method on bc2 class.
+We extract 3 of the non-zero records from ```Data``` part of ```ARI.fit``` to illustrate the usage of predict method on bc2 class.
 
-Let's extract both prediction and confidence intervals for out prediction all at once:
+Let's extract %90 prediction intervals for our 3 chosen records first:
 
 ```{r}
+ndata <- ARI.fit$Data %>% as_tibble %>% slice(c(1,17,44))
 
-list('prediction interval'='prediction','confidence interval'='confidence') %>% 
-  
-  map(~predict(ARI.fit,ARI.fit$`Structured data`$X1 %>% as_tibble %>% 
-                  
-                  slice(c(1,17,44)),interval=.,alpha=.1))
+predict(ARI.fit,newdata=ndata,interval='prediction',alpha=.1)
+```
+
+and the %90 confidence intervals:
+
+```{r}
+predict(ARI.fit,newdata=ndata,interval='confidence',alpha=.1)
 ```
 
 As we can see, predict outputs a tibble containing predictions along with their requested intervals (prediction or confidence intervals based on requested alpha level) for each response.

@@ -5,6 +5,7 @@
 #' @author Shahin Roshani
 #'
 #' @param object a fitted object of class inheriting from "bc2".
+#' @param ... Other fitted arguments (Not being used by objects of class \code{bc2}).
 #'
 #' @return A tibble with 2 columns containing fitted values of each response.
 #'
@@ -14,21 +15,22 @@
 #'
 #' @export
 
-fitted.bc2 <- function(object){
+fitted.bc2 <- function(object,...){
 
-  x <- object
+  mats <- object$`Structured data`[c('X1','X2')] %>% map(~cbind(1,.))
 
-  fitted.X1 <- x$`Structured data`$X1 %>% cbind(1,.)
+  betas <- map2(.x=mats %>% map(ncol),
 
-  fitted.betas <- x$`Final tables` %>% .[-1] %>%
+                .y=object$`Final tables`[-1] %>% map(~.$Estimate),
 
-    map(~.$Estimate[1:ncol(fitted.X1)] %>% as.matrix(ncol=1))
+                .f=~.y[1:.x])
+
+  names(mats) = names(betas) <- object$`Final tables`[-1] %>% names
 
   return(
 
-    fitted.betas %>% map(~fitted.X1%*%.) %>% as.data.frame %>% as_tibble
+    map2(.x=mats,.y=betas,.f=~.x%*%.y) %>% as.data.frame %>% as_tibble
 
   )
 
 }
-

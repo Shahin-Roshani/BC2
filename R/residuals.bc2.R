@@ -5,6 +5,7 @@
 #' @author Shahin Roshani
 #'
 #' @param object a fitted object of class inheriting from "bc2".
+#' @param ... Other residuals arguments (Not being used by objects of class \code{bc2}).
 #'
 #' @return A tibble with 2 columns containing residuals related to each response.
 #'
@@ -14,11 +15,14 @@
 #'
 #' @export
 
-residuals.bc2 <- function(object){
+residuals.bc2 <- function(object,...){
 
-  x <- object
+  real <- object$`Structured data`[names(object$Data)[1:2]] %>% as_tibble
 
-  ((x$`Structured data`[3:4] %>% as_tibble)-fitted(x)) %>% as_tibble
+  return(
+
+    (real-fitted(object)) %>% as_tibble
+
+  )
 
 }
-

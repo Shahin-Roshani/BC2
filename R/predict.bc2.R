@@ -6,8 +6,9 @@
 #'
 #' @param object a fitted object of class inheriting from "bc2".
 #' @param newdata Data (tibble or data.frame) containing predictor information of new records.
-#' @param interval Type of interval for predictions. Valid inputs are \code{'confidence'} or \code{'interval'}. Default is \code{'interval'}.
+#' @param interval Type of interval for predictions. Valid inputs are \code{'confidence'} or \code{'prediction'}. Default is \code{'prediction'}.
 #' @param alpha alpha value for creating the interval(s) of new prediction(s). Default is \emph{0.05}.
+#' @param ... Other predict arguments (Not being used by objects of class \code{bc2}).
 #'
 #' @return A list of length 2. Each slot of this list contains a tibble with the information of predictions and their related intervals for each response.
 #'
@@ -17,9 +18,7 @@
 #'
 #' @export
 
-predict.bc2 <- function(object,newdata,interval='prediction',alpha=.05){
-
-  x <- object
+predict.bc2 <- function(object,newdata,interval='prediction',alpha=.05,...){
 
   if (!(interval %in% c('prediction','confidence'))){
 
@@ -27,68 +26,70 @@ predict.bc2 <- function(object,newdata,interval='prediction',alpha=.05){
 
   }
 
-  x0 <- newdata
+  mats <- object$`Structured data`[c('X1','X2')] %>% map(~cbind(1,.))
 
-  newdata <- model.matrix(~.,data=newdata)
+  betas <- map2(.x=mats %>% map(ncol),
 
-  fitted.betas <- x$`Final tables` %>% .[-1] %>%
+                .y=object$`Final tables`[-1] %>% map(~.$Estimate),
 
-    map(~.$Estimate[1:ncol(newdata)] %>% as.matrix(ncol=1))
+                .f=~.y[1:.x])
 
-  res <- fitted.betas %>% map(~newdata%*%.) %>%
+  newdata %<>% (function(x){
 
-    map(~as.data.frame(.) %>% rename('prediction'='V1')) %>%
+    if (any(names(x) %in% names(object$Data)[1:2])){
 
-    map(~cbind(x0,.))
+      x %<>% select(-which(names(x) %in% names(object$Data)[1:2]))
 
-  res <- map2(res,
+    }
 
-              x$`Final tables`[-1] %>% map(~.$Estimate[nrow(.)-1]),
+    return(x)
 
-              ~mutate(.x,sigma=.y))
+  })
 
-  res <- map2(names(res) %>% as.list,
+  preds_mats <- map2(.x=list(model.matrix(~.,data=newdata)) %>% rep(.,2),
 
-              res,
+                     .y=mats %>% map(~colnames(.) %>% .[-which(.=='')]),
 
-              ~mutate(.y,response=.x)) %>% reduce(rbind)
+                     .f=~.x[,.y]) %>% map(~cbind(1,.))
 
 
-  Xmat <- x$`Structured data`$X1
+  preds <- map2(.x=preds_mats,.y=betas,.f=~.x%*%.y) %>%
 
-  resX <- res %>% select(-c('prediction','sigma','response'))
+    map(~as.data.frame(.) %>% as_tibble %>% rename('prediction'='V1'))
 
-  for (i in 1:nrow(res)){
+  inside_vals <- map2(.x=mats,
 
-    x0 <- resX[i,] %>% as.matrix %>% t
+                      .y=preds_mats,
 
-    res$pure_inside[i] <- t(x0)%*%solve(t(Xmat)%*%Xmat)%*%x0
+                      .f=~.y%*%solve(t(.x)%*%.x)%*%t(.y)) %>% map(diag)
 
-  }
 
   if (interval=='prediction'){
 
-    res %<>% mutate_at('pure_inside',~.+1)
+    inside_vals %<>% map(~.+1)
 
   }
 
-  mydt <- qt(1-alpha/2,nrow(Xmat)-ncol(Xmat)-1)
+  sigmas <- object$`Final tables`[-1] %>% map(~.$Estimate[nrow(.)-1])
 
-  res %<>% mutate(lower=prediction-mydt*sigma*sqrt(pure_inside),
+  preds <-
 
-                  upper=prediction+mydt*sigma*sqrt(pure_inside)) %>%
+    pmap(.l=list(mats,preds,inside_vals,sigmas),
 
-    select(prediction,lower,upper,response) %>%
+         .f=~mutate(..2,
 
-    mutate_at('response',~as.factor(.) %>% fct_inorder) %>%
+                    lower=prediction-
 
-    split(.$response) %>%
+                      ..4*qt(1-alpha/2,nrow(..1)-ncol(..1)-1)*sqrt(..3),
 
-    map(~select(.,-response) %>% as_tibble %>%
+                    upper=prediction+
 
-          rename_at(2:3,~str_c(.,' (%',(1-alpha)*100,')')))
+                      ..4*qt(1-alpha/2,nrow(..1)-ncol(..1)-1)*sqrt(..3))) %>%
 
-  return(res)
+    map(~rename_at(.,-1,~str_c(.,' (%',(1-alpha)*100,')')))
+
+  names(preds) <- object$`Final tables`[-1] %>% names
+
+  return(preds)
 
 }
-

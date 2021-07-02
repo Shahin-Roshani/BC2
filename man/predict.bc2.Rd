@@ -4,16 +4,18 @@
 \alias{predict.bc2}
 \title{predict.bc2}
 \usage{
-\method{predict}{bc2}(object, newdata, interval = "prediction", alpha = 0.05)
+\method{predict}{bc2}(object, newdata, interval = "prediction", alpha = 0.05, ...)
 }
 \arguments{
 \item{object}{a fitted object of class inheriting from "bc2".}
 
 \item{newdata}{Data (tibble or data.frame) containing predictor information of new records.}
 
-\item{interval}{Type of interval for predictions. Valid inputs are \code{'confidence'} or \code{'interval'}. Default is \code{'interval'}.}
+\item{interval}{Type of interval for predictions. Valid inputs are \code{'confidence'} or \code{'prediction'}. Default is \code{'prediction'}.}
 
 \item{alpha}{alpha value for creating the interval(s) of new prediction(s). Default is \emph{0.05}.}
+
+\item{...}{Other predict arguments (Not being used by objects of class \code{bc2}).}
 }
 \value{
 A list of length 2. Each slot of this list contains a tibble with the information of predictions and their related intervals for each response.

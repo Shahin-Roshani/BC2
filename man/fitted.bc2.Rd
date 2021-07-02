@@ -4,10 +4,12 @@
 \alias{fitted.bc2}
 \title{fitted.bc2}
 \usage{
-\method{fitted}{bc2}(object)
+\method{fitted}{bc2}(object, ...)
 }
 \arguments{
 \item{object}{a fitted object of class inheriting from "bc2".}
+
+\item{...}{Other fitted arguments (Not being used by objects of class \code{bc2}).}
 }
 \value{
 A tibble with 2 columns containing fitted values of each response.

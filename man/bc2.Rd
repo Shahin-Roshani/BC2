@@ -5,8 +5,9 @@
 \title{bc2}
 \usage{
 bc2(
-  pos.resps,
-  preds,
+  logistic,
+  positive1,
+  positive2,
   data,
   search.space = NULL,
   control.pars = NULL,
@@ -16,9 +17,11 @@ bc2(
 )
 }
 \arguments{
-\item{pos.resps}{A character vector of length two containing the names of model's two responses.}
+\item{logistic}{A one sided formula with only right hand side describing the predictors to be included in the logistic part of the model.}
 
-\item{preds}{A character vector containing the names of predictors to be used mutually in all parts of the model (logistic & positive parts).}
+\item{positive1}{A formula describing the response and predictors to be used as the first positive part of the model.}
+
+\item{positive2}{A formula describing the response and predictors to be used as the second positive part of the model.}
 
 \item{data}{Data containing responses and predictors.}
 

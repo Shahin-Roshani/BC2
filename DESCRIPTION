@@ -1,7 +1,7 @@
 Package: BC2
 Type: Package
 Title: Fitting multivariate semi-continuous proportionally constrained two-part fixed effects models
-Version: 0.1.1
+Version: 1.0.0
 Author: Shahin Roshani <shahinroshani@ymail.com>
 Maintainer: Shahin Roshani <shahinroshani@ymail.com>
 Description: Tools for fitting and evaluating multivariate semi-continuous proportionally constrained two-part fixed effects models.

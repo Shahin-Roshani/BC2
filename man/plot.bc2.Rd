@@ -4,15 +4,17 @@
 \alias{plot.bc2}
 \title{plot.bc2}
 \usage{
-\method{plot}{bc2}(object, type = "residuals")
+\method{plot}{bc2}(x, type = "residuals", ...)
 }
 \arguments{
-\item{object}{a fitted object of class inheriting from "bc2".}
+\item{x}{a fitted object of class inheriting from "bc2".}
 
 \item{type}{Type of plot to be drawn. Valid inputs are \code{'responses'}, \code{'residuals'} or \code{'fit'}. Default is \code{'residuals'}.}
+
+\item{...}{Other plot arguments (Not being used by objects of class \code{bc2}).}
 }
 \value{
-When \code{type='responses'}, density plots of original and un-transformed responses (non-zero) will be returned (unless transformation was done directly on non-zero responses and not through the \code{g.funs} arguemt).
+When \code{type='responses'}, density plots of original and un-transformed responses (non-zero) will be returned (unless transformation was done directly on non-zero responses and not through the \code{g.funs} argument).
 
 When \code{type='residuals'}, density plot of residuals plus residuals vs fitted values plot for each response will be returned.
 
