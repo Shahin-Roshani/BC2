@@ -23,7 +23,7 @@ fitted.bc2 <- function(object,...){
 
                 .y=object$`Final tables`[-1] %>% map(~.$Estimate),
 
-                .f=~.y[1:.x])
+                .f=~.y[seq_len(.x)])
 
   names(mats) = names(betas) <- object$`Final tables`[-1] %>% names
 

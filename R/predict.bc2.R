@@ -32,13 +32,13 @@ predict.bc2 <- function(object,newdata,interval='prediction',alpha=.05,...){
 
                 .y=object$`Final tables`[-1] %>% map(~.$Estimate),
 
-                .f=~.y[1:.x])
+                .f=~.y[seq_len(.x)])
 
   newdata %<>% (function(x){
 
-    if (any(names(x) %in% names(object$Data)[1:2])){
+    if (any(names(x) %in% names(object$Data)[seq_len(2)])){
 
-      x %<>% select(-which(names(x) %in% names(object$Data)[1:2]))
+      x %<>% select(-which(names(x) %in% names(object$Data)[seq_len(2)]))
 
     }
 
