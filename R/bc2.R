@@ -128,7 +128,7 @@ bc2 <- function(logistic,positive1,positive2,data,search.space=NULL,
 
     mutate(x=apply(.,1,function(x) (0 %in% x) & !all(x==0))) %>%
 
-    mutate(index=1:nrow(.)) %>% filter(x==T) %>% .$index -> non_match_index
+    mutate(index=seq_len(nrow(.))) %>% filter(x==T) %>% .$index -> non_match_index
 
   if (!is_empty(non_match_index)){
 
@@ -160,7 +160,7 @@ bc2 <- function(logistic,positive1,positive2,data,search.space=NULL,
 
     }
 
-    data %<>% mutate(zero=get(pos.resps[1])==0,index=1:nrow(.)) %>%
+    data %<>% mutate(zero=get(pos.resps[1])==0,index=seq_len(nrow(.))) %>%
 
       split(.$zero) %>%
 
@@ -205,29 +205,19 @@ bc2 <- function(logistic,positive1,positive2,data,search.space=NULL,
 
   y2 <- X[[pos.resps[2]]][pos_index]
 
-  X1 <- model.matrix(str_c('~',str_c(c(preds1,pos.resps),collapse='+')) %>%
+  X %<>% as_tibble %>% select(-all_of(pos.resps)) %>% as.matrix
+
+  X1 <- model.matrix(str_c('~',str_c(preds1,collapse='+')) %>%
 
                        as.formula,data=data)[,-1] %>% as.data.frame %>%
 
-    slice(pos_index)
+    slice(pos_index) %>% as.matrix
 
-  X2 <- model.matrix(str_c('~',str_c(c(preds2,pos.resps),collapse='+')) %>%
+  X2 <- model.matrix(str_c('~',str_c(preds2,collapse='+')) %>%
 
                        as.formula,data=data)[,-1] %>% as.data.frame %>%
 
-    slice(pos_index)
-
-  tempp <- function(xx){
-
-    return(
-
-      xx %<>% as_tibble %>% select(-all_of(pos.resps)) %>% as.matrix
-
-    )
-
-  }
-
-  X %<>% tempp ; X1 %<>% tempp ; X2 %<>% tempp
+    slice(pos_index) %>% as.matrix
 
 
   results$`Structured data` <- list(X,X1,X2,y1,y2) %>%
@@ -469,7 +459,7 @@ bc2 <- function(logistic,positive1,positive2,data,search.space=NULL,
 
   base_set %<>% map(function(x){
 
-    row.names(x) <- 1:nrow(x)
+    row.names(x) <- seq_len(nrow(x))
 
     return(x)
 
@@ -500,7 +490,7 @@ bc2 <- function(logistic,positive1,positive2,data,search.space=NULL,
       mutate(Estimate=Estimate*x)
 
 
-    for (j in 1:nrow(base_set$betas[[i]])){
+    for (j in seq_len(nrow(base_set$betas[[i]]))){
 
       if (base_set$betas[[i]]$x[j]!=1){
 
